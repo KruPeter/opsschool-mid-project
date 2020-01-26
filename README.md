@@ -1,8 +1,8 @@
 # opsschool-mid-project
 Opsschool 2020 mid-course project
 
-This project creates a full CI/CD process for WEB application (WEB app TBD).
-In this project using AWS services.
+This project is creates a full CI/CD process for WEB application (WEB app TBD).
+In this project using AWS services. The AWS environment is created using Terraform.
 - Tools involved in this project:
     * Ansible (not implemented yet)
     * Terraform
