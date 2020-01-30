@@ -1,14 +1,12 @@
 data "aws_security_group" "default" {
-  vpc_id = "${aws_vpc.resource "aws_vpc" "VPC_Project" {
-.id}"
-  name   = "default_SG_mid_project"
+  vpc_id = "${aws_vpc.VPC_Project.id}"
+  name   = "default"
 }
 
-resource "aws_security_group" "VPC_Project-default" {
+resource "aws_security_group" "vpc-mid-project-default" {
   name        = "mid-project-default"
   description = "default VPC mid project security group"
-  vpc_id      = "${aws_vpc.resource "aws_vpc" "VPC_Project" {
-.id}"
+  vpc_id      = "${aws_vpc.VPC_Project.id}"
 
   ingress {
     from_port   = 0
