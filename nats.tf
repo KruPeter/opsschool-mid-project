@@ -2,7 +2,7 @@
 resource "aws_eip" "nat" {
   count      = "2"
   vpc        = true
-  depends_on = ["aws_internet_gateway.gw"]
+  depends_on = ["aws_internet_gateway.IG_main"]
 }
 
 resource "aws_nat_gateway" "gw" {
@@ -35,7 +35,7 @@ resource "aws_route_table" "public" {
 # Create private route tables
 resource "aws_route_table" "private" {
   count  = "2"
-  vpc_id = "${aws_vpc.experiment.id}"
+  vpc_id = "${aws_vpc.VPC_Project.id}"
 
   route {
     cidr_block = "0.0.0.0/0"
