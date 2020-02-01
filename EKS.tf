@@ -1,22 +1,10 @@
-data "external" "myipaddr" {
-  program = ["bash", "-c", "curl -s 'https://api.ipify.org?format=json'"]
-}
-
-variable "additional_ip_addresses_for_eks_access" {
-  type    = list(string)
-  default = ["85.250.122.166/32","79.179.208.145"]
-}
-
-data "aws_subnet_ids" "eks_subnets" {
-  vpc_id = "${aws_vpc.VPC_Project.id}"
-}
-
-data "aws_vpc" "eks_vpc" {
-  id = "${aws_vpc.VPC_Project.id}"
-}
-
 terraform {
   required_version = ">= 0.12.0"
+}
+
+provider "aws" {
+  version = ">= 2.28.1"
+  region  = "us-east-1"
 }
 
 provider "random" {
@@ -51,6 +39,9 @@ provider "kubernetes" {
   version                = "~> 1.10"
 }
 
+data "aws_availability_zones" "available" {
+}
+
 locals {
   cluster_name = "opsSchool-eks-${random_string.suffix.result}"
 }
@@ -61,23 +52,8 @@ resource "random_string" "suffix" {
 }
 
 # CIDR will be "My IP" \ all Ips from which you need to access the worker nodes
-resource "aws_security_group" "worker_group_mgmt" {
-  name_prefix = "worker_group_mgmt"
-  vpc_id = "${aws_vpc.VPC_Project.id}"
-
-  ingress {
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-
-    cidr_blocks = var.additional_ip_addresses_for_eks_access
-
-  }
-}
-
-
-resource "aws_security_group" "all_worker_mgmt" {
-  name_prefix = "all_worker_management"
+resource "aws_security_group" "worker_group_mgmt_one" {
+  name_prefix = "worker_group_mgmt_one"
   vpc_id = "${aws_vpc.VPC_Project.id}"
 
   ingress {
@@ -86,17 +62,17 @@ resource "aws_security_group" "all_worker_mgmt" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/8",
-      "172.16.0.0/12",
-      "192.168.0.0/16",
+      "79.179.208.145/32"
     ]
   }
 }
 
+
 module "eks" {
   source       = "terraform-aws-modules/eks/aws"
   cluster_name = local.cluster_name
-  subnets      = data.aws_subnet_ids.eks_subnets.ids
+  #TODO Ssbnet id
+  subnets      = ["subnet-08e9cc7225098a979", "subnet-0a1b538cec9ea2621"]
 
   tags = {
     Environment = "test"
@@ -106,23 +82,17 @@ module "eks" {
 
   vpc_id = "${aws_vpc.VPC_Project.id}"
 
+  # TODO Worker group 1
+  # One Subnet
   worker_groups = [
     {
       name                          = "worker-group-1"
       instance_type                 = "t2.micro"
+      additional_userdata           = "echo foo bar"
       asg_desired_capacity          = 2
-      asg_max_size                  = 2
-      additional_security_group_ids = [aws_security_group.worker_group_mgmt.id]
+      additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
     }
 
   ]
 
-  worker_additional_security_group_ids = [aws_security_group.all_worker_mgmt.id]
-
-}
-
-resource "null_resource" "example1" {
-  provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name ${local.cluster_name}"
-  }
 }
