@@ -1,10 +1,9 @@
 node("linux"){
-  stage("Get Repo from brach") {
+  stage("Get Repo from branch") {
     checkout scm
   }
   
   stage("Create Docker Image") {
-    //Dockerfile
     app = docker.build("peterkr/opsschool-project")
   }
 
