@@ -6,14 +6,13 @@ In this project using AWS services. The AWS environment is created using Terrafo
 - Tools involved in this project:
     * Ansible (not implemented yet)
     * Terraform
-    * K8s (not implemented yet)
-    * Docker (not implemented yet)
+    * K8s
+    * Docker
     * Consul (not implemented yet)
-    * Jenkins (not implemented yet)
+    * Jenkins
     
 - Environment details:
     * Terraform will create a VPC with all requirements.
-    * Ansible will install and configure k8s (Might change to EKS).
     * Deploy your application in K8s and expose the service to the world.
-    * The application needs to register with consul.
-    * Runs tests.
+    * The application needs to register with consul (not Ready yet)
+    * Runs tests (not Ready yet)
