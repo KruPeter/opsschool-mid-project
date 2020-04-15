@@ -37,7 +37,7 @@ resource "aws_security_group" "vpc-mid-project-default" {
 }
 
 resource "aws_security_group" "Project_consul" {
-  name        = "foaas-consul"
+  name        = "Project-consul"
   description = "Allow ssh & consul inbound traffic"
   vpc_id      = "${aws_vpc.VPC_Project.id}"
 
