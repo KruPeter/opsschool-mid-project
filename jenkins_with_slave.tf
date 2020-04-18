@@ -140,3 +140,7 @@ resource "aws_instance" "jenkins_node" {
     ]
   }
 }
+
+output "jenkins_master" {
+  value = ["${aws_instance.jenkins_master.public_ip}"]
+}
