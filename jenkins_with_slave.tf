@@ -5,7 +5,7 @@ provider "aws" {
 
 variable vpc_id {
   description = "AWS VPC id"
-  default     = "vpc-0b7a4cb1fa34173de"
+  default     = ""
 }
 
 locals {
@@ -84,7 +84,7 @@ resource "aws_key_pair" "jenkins_ec2_key" {
 resource "aws_instance" "jenkins_master" {
   ami = "ami-07d0cf3af28718ef8"
   instance_type = "t2.micro"
-  subnet_id = "subnet-064da67661d884cf2"
+  subnet_id = ""
   key_name = aws_key_pair.jenkins_ec2_key.key_name
 
   tags = {
@@ -124,7 +124,7 @@ resource "aws_instance" "jenkins_node" {
   depends_on = ["aws_instance.jenkins_master"]
   ami = "ami-00eb20669e0990cb4"
   instance_type = "t2.micro"
-  subnet_id = "subnet-0cedfa8d1825f653f"
+  subnet_id = ""
   key_name = aws_key_pair.jenkins_ec2_key.key_name
 
   tags = {
