@@ -3,6 +3,11 @@ provider "aws" {
   region  = "us-east-1"
 }
 
+variable vpc_id {
+  description = "AWS VPC id"
+  default     = "vpc-0b7a4cb1fa34173de"
+}
+
 locals {
   jenkins_default_name = "jenkins"
   jenkins_home = "/home/ubuntu/jenkins_home"
@@ -11,9 +16,24 @@ locals {
   java_opts = "JAVA_OPTS='-Djenkins.install.runSetupWizard=false'"
 }
 
-resource "aws_security_group" "jenkins" {
-  name = local.jenkins_default_name
+resource "aws_security_group" "jenkins-sg" {
+  name = "jenkins-sg"
   description = "Allow Jenkins inbound traffic"
+  vpc_id = var.vpc_id
+
+ egress {
+   from_port   = 0
+   to_port     = 0
+   protocol    = "-1"
+   cidr_blocks = ["0.0.0.0/0"]
+ }
+
+ egress {
+   from_port   = 22
+   to_port     = 22
+   protocol    = "tcp"
+   cidr_blocks = ["0.0.0.0/0"]
+ }
 
   ingress {
     from_port = 443
@@ -41,6 +61,7 @@ resource "aws_security_group" "jenkins" {
     to_port = 22
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow ssh from my ip"
   }
 
   ingress {
@@ -55,26 +76,27 @@ resource "aws_security_group" "jenkins" {
   }
 }
 
-//resource "aws_key_pair" "jenkins_ec2_key" {
-//  key_name = "terraform_ec2_key"
-//  public_key = file("jenkins_ec2_key.pub")
-//}
+resource "aws_key_pair" "jenkins_ec2_key" {
+  key_name = "terraform_ec2_key"
+  public_key = file("jenkins_ec2_key.pub")
+}
 
 resource "aws_instance" "jenkins_master" {
   ami = "ami-07d0cf3af28718ef8"
   instance_type = "t2.micro"
-  key_name = jenkins_ec2_key
+  subnet_id = "subnet-064da67661d884cf2"
+  key_name = aws_key_pair.jenkins_ec2_key.key_name
 
   tags = {
     Name = "Jenkins Master"
   }
 
-  security_groups = ["default", aws_security_group.jenkins.name]
+  vpc_security_group_ids = [aws_security_group.jenkins-sg.id]
 
   connection {
     host = aws_instance.jenkins_master.public_ip
     user = "ubuntu"
-    private_key = file("~/Downloads/jenkins_ec2_key.pem")
+    private_key = file("jenkins_ec2_key")
   }
 
   provisioner "remote-exec" {
@@ -85,12 +107,11 @@ resource "aws_instance" "jenkins_master" {
       "sudo systemctl enable docker",
       "sudo usermod -aG docker ubuntu",
       "mkdir -p ${local.jenkins_home}",
-      "sudo chown -R 1000:1000 ${local.jenkins_home}",
-      "cat /dev/zero| ssh-keygen -q -N \"\"",
+      "sudo chown -R 1000:1000 ${local.jenkins_home}"
     ]
   }
   provisioner "local-exec" {
-    command = "ssh -o StrictHostKeyChecking=no -i ~/Downloads/jenkins_ec2_key.pem ubuntu@${aws_instance.jenkins_master.public_dns} \"cat ~/.ssh/id_rsa.pub\" > master_key.pub"
+    command = "ssh -o StrictHostKeyChecking=no -i ~/Downloads/jenkins_ec2_key.pem ubuntu@${aws_instance.jenkins_master.public_ip} \"cat ~/.ssh/id_rsa.pub\" > master_key.pub"
   }
   provisioner "remote-exec" {
     inline = [
@@ -103,18 +124,19 @@ resource "aws_instance" "jenkins_node" {
   depends_on = ["aws_instance.jenkins_master"]
   ami = "ami-00eb20669e0990cb4"
   instance_type = "t2.micro"
-  key_name = "jenkins_ec2_key"
+  subnet_id = "subnet-0cedfa8d1825f653f"
+  key_name = aws_key_pair.jenkins_ec2_key.key_name
 
   tags = {
     Name = "Jenkins Node"
   }
 
-  security_groups = ["default", aws_security_group.jenkins.name]
+  vpc_security_group_ids = [aws_security_group.jenkins-sg.id]
 
   connection {
     host = aws_instance.jenkins_node.public_ip
     user = "ec2-user"
-    private_key = file("~/Downloads/jenkins_ec2_key.pem")
+    private_key = file("jenkins_ec2_key")
   }
 
   provisioner "file" {
